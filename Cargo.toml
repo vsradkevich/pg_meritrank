@@ -1,0 +1,41 @@
+[package]
+name = "pg_meritrank"
+version = "0.0.1"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+
+[features]
+default = ["pg13"]
+pg11 = ["pgx/pg11", "pgx-tests/pg11"]
+pg12 = ["pgx/pg12", "pgx-tests/pg12"]
+pg13 = ["pgx/pg13", "pgx-tests/pg13"]
+pg14 = ["pgx/pg14", "pgx-tests/pg14"]
+pg15 = ["pgx/pg15", "pgx-tests/pg15"]
+pg_test = []
+
+[dependencies]
+pgx = "=0.7.4"
+rand = "=0.8.4"
+petgraph = "0.6.3"
+uuid = "1.3.3"
+indexmap = "2.0.0"
+once_cell = "1.8.0"
+lazy_static = "1.4"
+thiserror = "1.0.29"
+serde = "1.0.166"
+
+
+[dev-dependencies]
+pgx-tests = "=0.7.4"
+
+[profile.dev]
+panic = "unwind"
+
+[profile.release]
+panic = "unwind"
+opt-level = 3
+lto = "fat"
+codegen-units = 1
