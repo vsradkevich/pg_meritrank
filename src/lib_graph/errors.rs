@@ -9,8 +9,8 @@ pub enum MeritRankError {
     InvalidNode,
 }
 
-use std::fmt::{Display, Formatter, Result};
 use std::error::Error;
+use std::fmt::{Display, Formatter, Result};
 
 impl Display for MeritRankError {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
@@ -24,7 +24,6 @@ impl Display for MeritRankError {
         }
     }
 }
-
 
 impl Error for MeritRankError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {

@@ -1,8 +1,7 @@
 use uuid::Uuid;
 
-use rand::Rng;
 use rand::thread_rng;
-
+use rand::Rng;
 
 pub type WalkId = Uuid;
 
@@ -12,7 +11,9 @@ pub struct WalkIdGenerator {
 
 impl WalkIdGenerator {
     pub fn new() -> Self {
-        WalkIdGenerator { id: Uuid::from_u128(thread_rng().gen()) }
+        WalkIdGenerator {
+            id: Uuid::from_u128(thread_rng().gen()),
+        }
     }
 
     pub fn get_id(&self) -> WalkId {
@@ -20,7 +21,7 @@ impl WalkIdGenerator {
     }
 }
 
-use std::collections::{HashMap};
+use std::collections::HashMap;
 
 use crate::lib_graph::node::{NodeId, Weight};
 
@@ -213,7 +214,7 @@ impl RandomWalk {
     ///     println!("Node ID: {:?}", node_id);
     /// }
     /// ```
-    pub fn iter(&self) -> impl Iterator<Item=&NodeId> {
+    pub fn iter(&self) -> impl Iterator<Item = &NodeId> {
         self.nodes.iter()
     }
 
@@ -287,6 +288,7 @@ impl IntoIterator for RandomWalk {
     }
 }
 
+#[allow(dead_code)]
 /// Penalty calculation logic:
 /// 1. The penalty is accumulated by walking backwards from the last node in the segment.
 /// 2. If a node is encountered in the walk more than once, its penalty is updated to the highest current accumulated penalty.
@@ -315,7 +317,10 @@ impl RandomWalk {
     ///
     /// Returns:
     /// - A map containing the penalties for nodes.
-    pub fn calculate_penalties(&self, neg_weights: &HashMap<NodeId, Weight>) -> HashMap<NodeId, Weight> {
+    pub fn calculate_penalties(
+        &self,
+        neg_weights: &HashMap<NodeId, Weight>,
+    ) -> HashMap<NodeId, Weight> {
         let mut penalties: HashMap<NodeId, Weight> = HashMap::new();
         let mut negs = neg_weights.clone();
         let mut accumulated_penalty = 0.0;
@@ -333,7 +338,6 @@ impl RandomWalk {
         penalties
     }
 }
-
 
 // use crate::error::MeritRankError;
 // use crate::graph::{MyGraph, MyDiGraph};
@@ -395,7 +399,10 @@ impl PosWalk {
     /// Panics:
     /// - If the current position is out of bounds of the random walk.
     pub fn get_current_node(&self) -> NodeId {
-        assert!(self.pos < self.walk.len(), "Current position is out of bounds.");
+        assert!(
+            self.pos < self.walk.len(),
+            "Current position is out of bounds."
+        );
         *self.walk.get_nodes().get(self.pos).unwrap()
     }
 }

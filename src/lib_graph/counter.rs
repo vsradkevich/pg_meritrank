@@ -23,8 +23,8 @@ impl Counter {
 
     /// Updates the counter by incrementing the counts for the provided values.
     pub fn increment_counts<I>(&mut self, items: I)
-        where
-            I: IntoIterator<Item=NodeId>,
+    where
+        I: IntoIterator<Item = NodeId>,
     {
         for item in items {
             let count = self.counter.entry(item).or_insert(0.0);
@@ -34,8 +34,8 @@ impl Counter {
 
     /// Updates the counter with unique values, incrementing their counts.
     pub fn increment_unique_counts<I>(&mut self, items: I)
-        where
-            I: IntoIterator<Item=NodeId>,
+    where
+        I: IntoIterator<Item = NodeId>,
     {
         let unique_values: HashSet<NodeId> = items.into_iter().collect();
         self.increment_counts(unique_values);
@@ -57,7 +57,7 @@ impl Counter {
     }
 
     /// Returns an iterator over the count values.
-    pub fn count_values(&self) -> impl Iterator<Item=&Weight> {
+    pub fn count_values(&self) -> impl Iterator<Item = &Weight> {
         self.counter.values()
     }
 
@@ -78,7 +78,6 @@ impl Default for Counter {
 }
 
 use once_cell::sync::Lazy;
-
 
 impl Default for &Counter {
     fn default() -> Self {

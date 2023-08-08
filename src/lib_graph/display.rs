@@ -1,8 +1,7 @@
 use std::fmt;
 
 #[allow(unused_imports)]
-use crate::lib_graph::{node::NodeId, walk::RandomWalk, walk::PosWalk, storage::WalkStorage};
-
+use crate::lib_graph::{node::NodeId, storage::WalkStorage, walk::PosWalk, walk::RandomWalk};
 
 impl fmt::Display for NodeId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

@@ -8,13 +8,12 @@ use std::sync::{Arc, Mutex};
 use lazy_static::lazy_static;
 #[allow(unused_imports)]
 use pgx::{
-    *,
+    pg_sys::{BuiltinOid, Datum, Oid},
     prelude::*,
-    pg_sys::{Oid, Datum, BuiltinOid},
-    spi::{SpiTupleTable, SpiClient, OwnedPreparedStatement, Error},
+    spi::{Error, OwnedPreparedStatement, SpiClient, SpiTupleTable},
+    *,
 };
 use rand::Rng;
-
 
 // Current crate (`crate::`) imports
 use crate::lib_graph::{MeritRank, MeritRankError, MyGraph, NodeId};
@@ -25,13 +24,8 @@ pg_module_magic!();
 // type alias
 type SpiTuple = spi::SpiHeapTupleData;
 
-
 // Constants
-const TYPE_STRING: &[&str] = &[
-    "source::text",
-    "destination::text",
-    "weight::float8",
-];
+const TYPE_STRING: &[&str] = &["source::text", "destination::text", "weight::float8"];
 
 const BEGIN: &str = "BEGIN";
 
@@ -49,7 +43,6 @@ const INSERT_SQL: &str = "INSERT INTO graph (source, destination, weight) VALUES
 const COMMIT: &str = "COMMIT";
 
 const SELECT_QUERY: &str = "SELECT source, destination, weight FROM graph;";
-
 
 // Define a new error type for better error handling
 #[derive(Debug, thiserror::Error)]
@@ -114,10 +107,8 @@ pub enum GraphError {
 
     #[error("Mutex lock error: {0}")]
     MutexLockError(String),
-
     // TODO: Include any other custom error types here
 }
-
 
 // Singleton instance
 lazy_static! {
@@ -145,7 +136,10 @@ impl GraphSingleton {
                 let merit_rank = MeritRank::new(graph.graph.clone())?;
                 Ok(merit_rank)
             }
-            Err(e) => Err(GraphError::MutexLockError(format!("Mutex lock error: {}", e))),
+            Err(e) => Err(GraphError::MutexLockError(format!(
+                "Mutex lock error: {}",
+                e
+            ))),
         }
     }
 
@@ -164,7 +158,10 @@ impl GraphSingleton {
     pub fn add_node(node_name: &str) -> Result<NodeId, GraphError> {
         match GRAPH.lock() {
             Ok(mut graph) => graph.get_node_id(node_name),
-            Err(e) => Err(GraphError::MutexLockError(format!("Mutex lock error: {}", e))),
+            Err(e) => Err(GraphError::MutexLockError(format!(
+                "Mutex lock error: {}",
+                e
+            ))),
         }
     }
 
@@ -188,10 +185,16 @@ impl GraphSingleton {
                 if let Some(&node_id) = graph.node_names.get(node_name) {
                     Ok(node_id)
                 } else {
-                    Err(GraphError::NodeNotFoundError(format!("Node not found: {}", node_name)))
+                    Err(GraphError::NodeNotFoundError(format!(
+                        "Node not found: {}",
+                        node_name
+                    )))
                 }
             }
-            Err(e) => Err(GraphError::MutexLockError(format!("Mutex lock error: {}", e))),
+            Err(e) => Err(GraphError::MutexLockError(format!(
+                "Mutex lock error: {}",
+                e
+            ))),
         }
     }
 
@@ -204,9 +207,15 @@ impl GraphSingleton {
                         return Ok(name.to_string());
                     }
                 }
-                Err(GraphError::NodeNotFoundError(format!("Node not found: {}", node_id)))
+                Err(GraphError::NodeNotFoundError(format!(
+                    "Node not found: {}",
+                    node_id
+                )))
             }
-            Err(e) => Err(GraphError::MutexLockError(format!("Mutex lock error: {}", e))),
+            Err(e) => Err(GraphError::MutexLockError(format!(
+                "Mutex lock error: {}",
+                e
+            ))),
         }
     }
 
@@ -222,9 +231,9 @@ impl GraphSingleton {
                 })?;
                 Ok(())
             }
-            Err(_err) => {
-                Err(GraphError::EdgeCreationError("Error adding edge".to_string()))
-            }
+            Err(_err) => Err(GraphError::EdgeCreationError(
+                "Error adding edge".to_string(),
+            )),
         }
     }
 
@@ -261,7 +270,11 @@ impl GraphSingleton {
     ///
     /// - `num_nodes`: The number of nodes to generate
     /// - `border_probability`: The probability of creating an edge between nodes
-    pub fn generate_graph(&mut self, num_nodes: usize, border_probability: f64) -> Result<(), GraphError> {
+    pub fn generate_graph(
+        &mut self,
+        num_nodes: usize,
+        border_probability: f64,
+    ) -> Result<(), GraphError> {
         let mut rng = rand::thread_rng();
         let node_names: Vec<String> = self.generate_node_names(num_nodes);
 
@@ -273,7 +286,10 @@ impl GraphSingleton {
                 if i != j && rng.gen::<f64>() < border_probability {
                     let target = self.get_node_id(&node_names[j])?;
                     let weight = rng.gen_range(0.0..=1.0);
-                    println!("Adding edge from {} to {} with weight {}", node_names[i], node_names[j], weight);
+                    println!(
+                        "Adding edge from {} to {} with weight {}",
+                        node_names[i], node_names[j], weight
+                    );
                     self.add_edge(source, target, weight)?;
                 }
             }
@@ -281,7 +297,11 @@ impl GraphSingleton {
 
         let stop = std::time::Instant::now();
         println!("Time to generate graph: {:?}", stop.duration_since(start));
-        println!("Graph has {} nodes and {} edges", self.graph.node_count(), self.graph.get_edges().len());
+        println!(
+            "Graph has {} nodes and {} edges",
+            self.graph.node_count(),
+            self.graph.get_edges().len()
+        );
 
         Ok(())
     }
@@ -335,32 +355,44 @@ impl GraphSingleton {
 
     /// Creates the graph table in the database if it does not exist
     fn create_graph_table_if_not_exists(&self, client: &mut SpiClient) -> Result<(), GraphError> {
-        client.update(CREATE_TABLE, None, None)
+        client
+            .update(CREATE_TABLE, None, None)
             .map_err(|_| GraphError::TableCreationError("Error creating table".to_string()))?;
         Ok(())
     }
 
     /// Begins a database transaction
     fn begin_transaction(&self, client: &mut SpiClient) -> Result<(), GraphError> {
-        client.update(BEGIN, None, None)
+        client
+            .update(BEGIN, None, None)
             .map_err(|e| GraphError::TransactionBeginError(e.to_string()))?;
         Ok(())
     }
 
     /// Prepares an SQL insert statement
-    fn prepare_insert_statement(client: &mut SpiClient) -> Result<OwnedPreparedStatement, GraphError> {
+    fn prepare_insert_statement(
+        client: &mut SpiClient,
+    ) -> Result<OwnedPreparedStatement, GraphError> {
         let param_types = Some(vec![
             BuiltinOid::TEXTOID.into(),
             BuiltinOid::TEXTOID.into(),
             BuiltinOid::FLOAT8OID.into(),
         ]);
 
-        client.prepare(INSERT_SQL, param_types)
+        client
+            .prepare(INSERT_SQL, param_types)
             .map(|stmt| stmt.keep())
-            .map_err(|_| GraphError::StatementPreparationError("Error preparing insert statement".to_string()))
+            .map_err(|_| {
+                GraphError::StatementPreparationError(
+                    "Error preparing insert statement".to_string(),
+                )
+            })
     }
 
-    fn insert_into_graph(edge: &(NodeId, NodeId, f64), client: &mut SpiClient) -> Result<(), GraphError> {
+    fn insert_into_graph(
+        edge: &(NodeId, NodeId, f64),
+        client: &mut SpiClient,
+    ) -> Result<(), GraphError> {
         // Obtain immutable access to the GRAPH singleton
         let graph = GRAPH.lock().unwrap();
 
@@ -370,15 +402,27 @@ impl GraphSingleton {
     }
 
     /// Inserts an edge into the graph database
-    fn insert_edge_into_graph(&self, edge: &(NodeId, NodeId, f64), client: &mut SpiClient) -> Result<(), GraphError> {
+    fn insert_edge_into_graph(
+        &self,
+        edge: &(NodeId, NodeId, f64),
+        client: &mut SpiClient,
+    ) -> Result<(), GraphError> {
         let (source, destination, weight) = edge;
-        let node_ids: HashMap<NodeId, String> = self.node_names.iter().map(|(name, id)| (*id, name.clone())).collect();
+        let node_ids: HashMap<NodeId, String> = self
+            .node_names
+            .iter()
+            .map(|(name, id)| (*id, name.clone()))
+            .collect();
 
         // Get the node names from the node ids
-        let source_name = node_ids.get(source)
-            .ok_or_else(|| GraphError::NodeNotFoundError("Source node not found".to_string()))?.clone();
-        let destination_name = node_ids.get(destination)
-            .ok_or_else(|| GraphError::NodeNotFoundError("Destination node not found".to_string()))?.clone();
+        let source_name = node_ids
+            .get(source)
+            .ok_or_else(|| GraphError::NodeNotFoundError("Source node not found".to_string()))?
+            .clone();
+        let destination_name = node_ids
+            .get(destination)
+            .ok_or_else(|| GraphError::NodeNotFoundError("Destination node not found".to_string()))?
+            .clone();
 
         // Convert String to Datum
         let source_datum = source_name.into_datum();
@@ -390,15 +434,17 @@ impl GraphSingleton {
 
         let stmt: OwnedPreparedStatement = Self::prepare_insert_statement(client)?;
 
-        client.update(stmt, None, params)
-            .map_err(|_| GraphError::EdgeCreationError("Error inserting edge into graph".to_string()))?;
+        client.update(stmt, None, params).map_err(|_| {
+            GraphError::EdgeCreationError("Error inserting edge into graph".to_string())
+        })?;
         Ok(())
     }
 
     /// Commits a database transaction
     fn commit_transaction(&self, client: &mut SpiClient) -> Result<(), GraphError> {
-        client.update(COMMIT, None, None)
-            .map_err(|_| GraphError::TableCreationError("Error committing transaction".to_string()))?;
+        client.update(COMMIT, None, None).map_err(|_| {
+            GraphError::TableCreationError("Error committing transaction".to_string())
+        })?;
         Ok(())
     }
 
@@ -409,10 +455,14 @@ impl GraphSingleton {
     /// and extracts the records from the returned rows.
     pub fn fetch_records(&mut self) -> Result<Vec<(NodeId, NodeId, f64)>, GraphError> {
         Spi::connect(|client| {
-            let prepared_stmt = client.prepare(SELECT_QUERY, None)
-                .map_err(|_| GraphError::StatementPreparationError("Error preparing SELECT statement".to_string()))?;
+            let prepared_stmt = client.prepare(SELECT_QUERY, None).map_err(|_| {
+                GraphError::StatementPreparationError(
+                    "Error preparing SELECT statement".to_string(),
+                )
+            })?;
 
-            let rows = client.select(&prepared_stmt, None, None)
+            let rows = client
+                .select(&prepared_stmt, None, None)
                 .map_err(|_| GraphError::DataExtractionError("Error selecting rows".to_string()))?;
 
             // Function to extract records from the rows and return them
@@ -424,15 +474,22 @@ impl GraphSingleton {
     ///
     /// This method iterates through the provided rows, extracts the required data
     /// from each row and stores them in a vector as records.
-    fn extract_records_from_rows(&mut self, rows: SpiTupleTable) -> Result<Vec<(NodeId, NodeId, f64)>, GraphError> {
+    fn extract_records_from_rows(
+        &mut self,
+        rows: SpiTupleTable,
+    ) -> Result<Vec<(NodeId, NodeId, f64)>, GraphError> {
         let mut records = Vec::new();
 
         for row in rows {
-            let (source, destination, weight) = self.extract_data_from_row(&row)
-                .map_err(|_| GraphError::RecordsExtractionError("Error extracting records".to_string()))?;
+            let (source, destination, weight) = self.extract_data_from_row(&row).map_err(|_| {
+                GraphError::RecordsExtractionError("Error extracting records".to_string())
+            })?;
 
             records.push((source, destination, weight));
-            println!("ROW source: {}, destination: {}, weight: {}", source, destination, weight)
+            println!(
+                "ROW source: {}, destination: {}, weight: {}",
+                source, destination, weight
+            )
         }
         println!("extract_records_from_rows worked");
         Ok(records)
@@ -441,15 +498,21 @@ impl GraphSingleton {
     /// Extracts data from a row.
     ///
     /// This method extracts the source, destination, and weight data from a given row.
-    fn extract_data_from_row(&mut self, row: &SpiTuple) -> Result<(NodeId, NodeId, f64), GraphError> {
-        let source = self.extract_node_id_from_row(&row, 0)
-            .map_err(|_| GraphError::DataExtractionError("Failed to extract source value".to_string()))?;
+    fn extract_data_from_row(
+        &mut self,
+        row: &SpiTuple,
+    ) -> Result<(NodeId, NodeId, f64), GraphError> {
+        let source = self.extract_node_id_from_row(&row, 0).map_err(|_| {
+            GraphError::DataExtractionError("Failed to extract source value".to_string())
+        })?;
 
-        let destination = self.extract_node_id_from_row(&row, 1)
-            .map_err(|_| GraphError::DataExtractionError("Failed to extract destination value".to_string()))?;
+        let destination = self.extract_node_id_from_row(&row, 1).map_err(|_| {
+            GraphError::DataExtractionError("Failed to extract destination value".to_string())
+        })?;
 
-        let weight = Self::extract_weight_from_row(&row, 2)
-            .map_err(|_| GraphError::WeightExtractionError("Failed to extract weight value".to_string()))?;
+        let weight = Self::extract_weight_from_row(&row, 2).map_err(|_| {
+            GraphError::WeightExtractionError("Failed to extract weight value".to_string())
+        })?;
 
         Ok((source, destination, weight))
     }
@@ -457,10 +520,16 @@ impl GraphSingleton {
     /// Extracts a node id from a row.
     ///
     /// This method extracts a node id from a given row using the provided index.
-    fn extract_node_id_from_row(&mut self, row: &SpiTuple, index: usize) -> Result<NodeId, GraphError> {
+    fn extract_node_id_from_row(
+        &mut self,
+        row: &SpiTuple,
+        index: usize,
+    ) -> Result<NodeId, GraphError> {
         match row.get(index) {
             Ok(Some(value)) => self.get_node_id(value),
-            _ => Err(GraphError::DataExtractionError("Failed to extract node id".to_string())),
+            _ => Err(GraphError::DataExtractionError(
+                "Failed to extract node id".to_string(),
+            )),
         }
     }
 
@@ -468,11 +537,12 @@ impl GraphSingleton {
     fn extract_weight_from_row(row: &SpiTuple, index: usize) -> Result<f64, GraphError> {
         match row.get(index) {
             Ok(Some(value)) => Ok(value),
-            _ => Err(GraphError::WeightExtractionError("Failed to extract weight value".to_string())),
+            _ => Err(GraphError::WeightExtractionError(
+                "Failed to extract weight value".to_string(),
+            )),
         }
     }
 }
-
 
 // The postgres external function to return a greeting message.
 #[pg_extern]
@@ -497,8 +567,9 @@ fn insert_into_graph(node_name1: &str, node_name2: &str, weight: f64) -> Result<
         println!("edge: {:?}", edge);
 
         // Insert the edge into the graph
-        GraphSingleton::insert_into_graph(&edge, &mut client)
-            .map_err(|_| GraphError::EdgeCreationError("Error inserting edge into graph".to_string()))?;
+        GraphSingleton::insert_into_graph(&edge, &mut client).map_err(|_| {
+            GraphError::EdgeCreationError("Error inserting edge into graph".to_string())
+        })?;
 
         println!("Inserted edge ({}, {}, {})", node1, node2, weight);
         Ok(())
@@ -528,7 +599,10 @@ fn init_graph() -> Result<(), GraphError> {
                     // Process the fetched records
                     for record in records {
                         let (source, destination, weight) = record;
-                        println!("Source: {:?}, Destination: {:?}, Weight: {}", source, destination, weight);
+                        println!(
+                            "Source: {:?}, Destination: {:?}, Weight: {}",
+                            source, destination, weight
+                        );
 
                         // Add the edge to the graph
                         graph.add_edge(source, destination, weight)?;
@@ -537,7 +611,9 @@ fn init_graph() -> Result<(), GraphError> {
                 }
                 Err(e) => {
                     println!("Error fetching records: {}", e);
-                    Err(GraphError::FetchRecordsError("Error fetching records".to_string()))
+                    Err(GraphError::FetchRecordsError(
+                        "Error fetching records".to_string(),
+                    ))
                 }
             }
         }
@@ -563,7 +639,9 @@ fn init_graph() -> Result<(), GraphError> {
         }
         Err(e) => {
             println!("Error checking records: {}", e);
-            Err(GraphError::CheckRecordsError("Error checking records".to_string()))
+            Err(GraphError::CheckRecordsError(
+                "Error checking records".to_string(),
+            ))
         }
     }
 }
@@ -580,7 +658,7 @@ fn insert_and_trigger(source: &str, destination: &str, weight: f64) {
     }
 }
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(PostgresType, Serialize, Deserialize, Debug)]
 pub struct NodeRating {
@@ -639,10 +717,11 @@ impl NodeRating {
 
 #[pg_extern(immutable, parallel_safe)]
 fn calculate_ratings(
-    ego: &str, // The "ego" node for which we are calculating ratings
-    steps: i32, // The number of calculation steps to perform
+    ego: &str,          // The "ego" node for which we are calculating ratings
+    steps: i32,         // The number of calculation steps to perform
     limit: Option<i32>, // An optional limit on the number of ratings to return
-) -> Vec<NodeRating> { // Return a vector of NodeRating objects
+) -> Vec<NodeRating> {
+    // Return a vector of NodeRating objects
 
     // Convert the ego string into a NodeId
     let ego_id = GraphSingleton::node_name_to_id(ego).unwrap();
@@ -700,7 +779,6 @@ mod tests {
 
     type PgNum = Numeric<10, 5>;
 
-
     #[pg_test]
     fn test_hello_hello_world() {
         let result = crate::hello_hello_world();
@@ -710,7 +788,9 @@ mod tests {
 
     // #[pg_test]
     fn test_hello_hello_world_spi() {
-        let result: String = Spi::get_one("SELECT hello_hello_world();").unwrap().unwrap_or_default();
+        let result: String = Spi::get_one("SELECT hello_hello_world();")
+            .unwrap()
+            .unwrap_or_default();
         assert_eq!("Hello, hello_world", result);
         println!("Test hello_hello_world_spi passed.");
     }
@@ -722,7 +802,8 @@ mod tests {
         println!("Table created successfully.");
 
         // Check the table existence
-        let result: Option<String> = Spi::get_one("SELECT tablename::text FROM pg_tables WHERE tablename = 'graph';")?;
+        let result: Option<String> =
+            Spi::get_one("SELECT tablename::text FROM pg_tables WHERE tablename = 'graph';")?;
         assert_eq!(result, Some("graph".to_string()));
         println!("Table exists.");
 
@@ -731,9 +812,16 @@ mod tests {
         println!("Record inserted into table.");
 
         // Check if the row has been inserted
-        let source: Option<String> = Spi::get_one("SELECT source::text FROM graph WHERE source = 'node1' AND destination = 'node2';")?;
-        let destination: Option<String> = Spi::get_one("SELECT destination::text FROM graph WHERE source = 'node1' AND destination = 'node2';")?;
-        let weight: Option<f64> = Spi::get_one("SELECT weight::float8 FROM graph WHERE source = 'node1' AND destination = 'node2';").unwrap();
+        let source: Option<String> = Spi::get_one(
+            "SELECT source::text FROM graph WHERE source = 'node1' AND destination = 'node2';",
+        )?;
+        let destination: Option<String> = Spi::get_one(
+            "SELECT destination::text FROM graph WHERE source = 'node1' AND destination = 'node2';",
+        )?;
+        let weight: Option<f64> = Spi::get_one(
+            "SELECT weight::float8 FROM graph WHERE source = 'node1' AND destination = 'node2';",
+        )
+        .unwrap();
         assert_eq!(source, Some("node1".to_string()));
         assert_eq!(destination, Some("node2".to_string()));
         assert_eq!(weight, Some(1.0));
@@ -744,9 +832,15 @@ mod tests {
         println!("Record deleted from table.");
 
         // Check if the row has been deleted
-        let deleted_source = Spi::get_one::<String>("SELECT source FROM graph WHERE source = 'node1' AND destination = 'node2';");
-        let deleted_destination = Spi::get_one::<String>("SELECT destination::text FROM graph WHERE source = 'node1' AND destination = 'node2';");
-        let deleted_weight = Spi::get_one::<f64>("SELECT weight::float8 FROM graph WHERE source = 'node1' AND destination = 'node2';");
+        let deleted_source = Spi::get_one::<String>(
+            "SELECT source FROM graph WHERE source = 'node1' AND destination = 'node2';",
+        );
+        let deleted_destination = Spi::get_one::<String>(
+            "SELECT destination::text FROM graph WHERE source = 'node1' AND destination = 'node2';",
+        );
+        let deleted_weight = Spi::get_one::<f64>(
+            "SELECT weight::float8 FROM graph WHERE source = 'node1' AND destination = 'node2';",
+        );
 
         // assert_eq!(deleted_source, None);
         match deleted_source {
@@ -760,7 +854,6 @@ mod tests {
         Ok(())
     }
 
-
     // #[pg_test]
     fn test_create_table() -> Result<(), GraphError> {
         Spi::run("SELECT create_graph_table();")?;
@@ -769,7 +862,9 @@ mod tests {
     }
 
     fn test_insert_into_graph() -> Result<(), GraphError> {
-        Spi::run("INSERT INTO graph (source, destination, weight) VALUES ('node1', 'node2', 1.23);")?;
+        Spi::run(
+            "INSERT INTO graph (source, destination, weight) VALUES ('node1', 'node2', 1.23);",
+        )?;
         println!("Test insert_into_graph passed.");
         Ok(())
     }
@@ -804,7 +899,8 @@ mod tests {
 
         // Check the graph's state
         let select_sql = "SELECT source, destination, weight FROM graph WHERE source = 'node3' AND destination = 'node4';";
-        let row: (Option<String>, Option<String>, Option<PgNum>) = Spi::get_three(select_sql).unwrap();
+        let row: (Option<String>, Option<String>, Option<PgNum>) =
+            Spi::get_three(select_sql).unwrap();
         assert!(row.0.is_some() && row.1.is_some() && row.2.is_some());
         let (source, destination, weight) = row;
         assert_eq!(source.unwrap(), "node3");
@@ -840,7 +936,6 @@ mod tests {
         let get_unique_source_values = get_unique_source_values()?;
         println!("Unique source values: {:?}", get_unique_source_values);
 
-
         let ego_node = select_ego_node()?;
         println!("Ego node selected: {}", ego_node);
         calculate_and_display_ratings(&ego_node)?;
@@ -848,7 +943,6 @@ mod tests {
 
         println!("Calculate rating via Select query");
         fetch_ratings_via_select(&ego_node)?;
-
 
         // let result = crate::hello_hello_world();
         // assert_eq!("Hello, hello_world", result);
@@ -922,13 +1016,18 @@ mod tests {
                     Ok(node) => node,
                     Err(err) => {
                         println!("Error occurred while retrieving node: {}", err);
-                        return Err(GraphError::NodeNameNotFoundError(format!("Error occurred while retrieving node: {}", err)));
+                        return Err(GraphError::NodeNameNotFoundError(format!(
+                            "Error occurred while retrieving node: {}",
+                            err
+                        )));
                     }
                 };
                 if let Some(node) = node_option {
                     nodes.push(node);
                 } else {
-                    return Err(GraphError::NodeNameNotFoundError("Node option is none".to_string()));
+                    return Err(GraphError::NodeNameNotFoundError(
+                        "Node option is none".to_string(),
+                    ));
                 }
             }
 
@@ -939,7 +1038,10 @@ mod tests {
 
         let ego_node = nodes
             .choose(&mut rand::thread_rng())
-            .ok_or_else(|| GraphError::NodeSelectionError("Error occurred while choosing node".to_string()))?.clone();
+            .ok_or_else(|| {
+                GraphError::NodeSelectionError("Error occurred while choosing node".to_string())
+            })?
+            .clone();
 
         Ok(ego_node)
     }

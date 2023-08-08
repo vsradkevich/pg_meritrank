@@ -1,19 +1,19 @@
-use std::collections::HashSet;
 use indexmap::IndexMap;
+use std::collections::HashSet;
 
 use rand::prelude::*;
 
-
-use crate::lib_graph::node::{NodeId, Weight};
+use crate::lib_graph::constants::OPTIMIZE_INVALIDATION;
 use crate::lib_graph::edge::EdgeId;
-use crate::lib_graph::walk::{WalkId, RandomWalk, PosWalk};
-use crate::lib_graph::constants::{OPTIMIZE_INVALIDATION};
+use crate::lib_graph::node::{NodeId, Weight};
+use crate::lib_graph::walk::{PosWalk, RandomWalk, WalkId};
 
 /// Represents a storage container for walks in the MeritRank graph.
 pub struct WalkStorage {
     walks: IndexMap<NodeId, IndexMap<WalkId, PosWalk>>,
 }
 
+#[allow(dead_code)]
 impl WalkStorage {
     /// Creates a new instance of WalkStorage.
     ///
@@ -31,7 +31,6 @@ impl WalkStorage {
     pub fn get_walks(&self) -> &IndexMap<NodeId, IndexMap<WalkId, PosWalk>> {
         &self.walks
     }
-
 
     /// Adds a walk to the storage.
     ///
@@ -89,7 +88,11 @@ impl WalkStorage {
                     // Update existing PosWalk entry
                     if let Some(pos_walks) = self.walks.get_mut(&node) {
                         if let Some(_old_pos_walk) = pos_walks.remove(&old_walk_id) {
-                            let start_pos = new_walk.get_nodes().iter().position(|&n| n == node).unwrap();
+                            let start_pos = new_walk
+                                .get_nodes()
+                                .iter()
+                                .position(|&n| n == node)
+                                .unwrap();
                             let new_pos_walk = PosWalk::new(new_walk.clone(), start_pos);
                             pos_walks.insert(new_walk_id, new_pos_walk);
                         }
@@ -101,7 +104,11 @@ impl WalkStorage {
                     }
                 } else if !old_walk_present && new_walk_present {
                     // Add new PosWalk entry or update existing entry
-                    let start_pos = new_walk.get_nodes().iter().position(|&n| n == node).unwrap();
+                    let start_pos = new_walk
+                        .get_nodes()
+                        .iter()
+                        .position(|&n| n == node)
+                        .unwrap();
                     let pos_walk = PosWalk::new(new_walk.clone(), start_pos);
 
                     if let Some(pos_walks) = self.walks.get_mut(&node) {
@@ -118,7 +125,6 @@ impl WalkStorage {
             self.walks.retain(|_, pos_walks| !pos_walks.is_empty());
         }
     }
-
 
     /// Updates the WalkStorage based on a new RandomWalk and an optional old RandomWalk.
     ///
@@ -151,12 +157,25 @@ impl WalkStorage {
                     if let Some(pos_walk) = walks_with_node.remove(&old_id) {
                         let mut updated_pos_walk = pos_walk;
                         updated_pos_walk.set_walk(new_walk.clone());
-                        updated_pos_walk.set_pos(new_walk.get_nodes().iter().position(|&n| n == node).unwrap());
+                        updated_pos_walk.set_pos(
+                            new_walk
+                                .get_nodes()
+                                .iter()
+                                .position(|&n| n == node)
+                                .unwrap(),
+                        );
                         walks_with_node.insert(new_walk_id.clone(), updated_pos_walk);
                     } else {
                         // Insert new walk if it doesn't exist
-                        let start_pos = new_walk.get_nodes().iter().position(|&n| n == node).unwrap();
-                        walks_with_node.insert(new_walk_id.clone(), PosWalk::new(new_walk.clone(), start_pos));
+                        let start_pos = new_walk
+                            .get_nodes()
+                            .iter()
+                            .position(|&n| n == node)
+                            .unwrap();
+                        walks_with_node.insert(
+                            new_walk_id.clone(),
+                            PosWalk::new(new_walk.clone(), start_pos),
+                        );
                     }
                 }
                 (Some(old_id), false) => {
@@ -168,11 +187,24 @@ impl WalkStorage {
                     if walks_with_node.contains_key(&new_walk_id) {
                         if let Some(pos_walk) = walks_with_node.get_mut(&new_walk_id) {
                             pos_walk.set_walk(new_walk.clone());
-                            pos_walk.set_pos(new_walk.get_nodes().iter().position(|&n| n == node).unwrap());
+                            pos_walk.set_pos(
+                                new_walk
+                                    .get_nodes()
+                                    .iter()
+                                    .position(|&n| n == node)
+                                    .unwrap(),
+                            );
                         }
                     } else {
-                        let start_pos = new_walk.get_nodes().iter().position(|&n| n == node).unwrap();
-                        walks_with_node.insert(new_walk_id.clone(), PosWalk::new(new_walk.clone(), start_pos));
+                        let start_pos = new_walk
+                            .get_nodes()
+                            .iter()
+                            .position(|&n| n == node)
+                            .unwrap();
+                        walks_with_node.insert(
+                            new_walk_id.clone(),
+                            PosWalk::new(new_walk.clone(), start_pos),
+                        );
                     }
                 }
                 (None, false) => {
@@ -185,7 +217,6 @@ impl WalkStorage {
         // Step 3: Remove empty nodes
         self.walks.retain(|_, v| !v.is_empty());
     }
-
 
     /// Retrieves the walks associated with a given node.
     ///
@@ -211,7 +242,6 @@ impl WalkStorage {
     pub fn _get_walks_throw_node(&self, node: NodeId) -> Option<&IndexMap<WalkId, PosWalk>> {
         self.walks.get(&node)
     }
-
 
     /// Retrieves the walks starting from the given node.
     ///
@@ -246,7 +276,6 @@ impl WalkStorage {
             })
             .unwrap_or_default()
     }
-
 
     /// Drops all walks starting from the specified node.
     ///
@@ -309,8 +338,8 @@ impl WalkStorage {
     /// let walks = storage.get_walks_through_node(node, |pos_walk| pos_walk.get_current_node() == NodeId::Int(2));
     /// ```
     pub fn get_walks_through_node<F>(&self, node: NodeId, filter: F) -> Vec<RandomWalk>
-        where
-            F: Fn(&PosWalk) -> bool,
+    where
+        F: Fn(&PosWalk) -> bool,
     {
         self.walks
             .get(&node)
@@ -324,7 +353,6 @@ impl WalkStorage {
             })
             .unwrap_or_default()
     }
-
 
     /// Determines whether to skip invalidation of a walk based on the edge change.
     ///
@@ -358,16 +386,29 @@ impl WalkStorage {
     /// let mut rng = StdRng::seed_from_u64(rng_seed);
     /// let (may_skip, new_pos) = storage.decide_skip_invalidation(&walk, pos, edge, step_recalc_probability, Some(&mut rng));
     /// ```
-    pub fn decide_skip_invalidation<R>(&self, walk: &RandomWalk, pos: usize, edge: EdgeId, step_recalc_probability: Weight, rnd: Option<R>) -> (bool, usize)
-        where R: RngCore
+    pub fn decide_skip_invalidation<R>(
+        &self,
+        walk: &RandomWalk,
+        pos: usize,
+        edge: EdgeId,
+        step_recalc_probability: Weight,
+        rnd: Option<R>,
+    ) -> (bool, usize)
+    where
+        R: RngCore,
     {
         if step_recalc_probability == 0.0 {
             self.decide_skip_invalidation_on_edge_deletion(walk, pos, edge)
         } else {
-            self.decide_skip_invalidation_on_edge_addition(walk, pos, edge, step_recalc_probability, rnd)
+            self.decide_skip_invalidation_on_edge_addition(
+                walk,
+                pos,
+                edge,
+                step_recalc_probability,
+                rnd,
+            )
         }
     }
-
 
     /// Determines whether to skip invalidation on edge deletion.
     ///
@@ -394,7 +435,12 @@ impl WalkStorage {
     /// let edge: EdgeId = (NodeId::UInt(1), NodeId::UInt(2));
     /// let (may_skip, new_pos) = storage.decide_skip_invalidation_on_edge_deletion(&walk, pos, edge);
     /// ```
-    pub fn decide_skip_invalidation_on_edge_deletion(&self, walk: &RandomWalk, pos: usize, edge: EdgeId) -> (bool, usize) {
+    pub fn decide_skip_invalidation_on_edge_deletion(
+        &self,
+        walk: &RandomWalk,
+        pos: usize,
+        edge: EdgeId,
+    ) -> (bool, usize) {
         assert!(pos < walk.len()); // Assert pos < len(walk)
         let (invalidated_node, dst_node) = edge;
 
@@ -448,8 +494,16 @@ impl WalkStorage {
     /// let mut rng = StdRng::seed_from_u64(rng_seed);
     /// let (may_skip, new_pos) = storage.decide_skip_invalidation_on_edge_addition(&walk, pos, edge, step_recalc_probability, Some(&mut rng));
     /// ```
-    pub fn decide_skip_invalidation_on_edge_addition<R>(&self, walk: &RandomWalk, pos: usize, edge: EdgeId, step_recalc_probability: Weight, mut rnd: Option<R>) -> (bool, usize)
-        where R: RngCore
+    pub fn decide_skip_invalidation_on_edge_addition<R>(
+        &self,
+        walk: &RandomWalk,
+        pos: usize,
+        edge: EdgeId,
+        step_recalc_probability: Weight,
+        mut rnd: Option<R>,
+    ) -> (bool, usize)
+    where
+        R: RngCore,
     {
         assert!(pos < walk.len()); // Assert pos < len(walk)
         let (invalidated_node, _dst_node) = edge;
@@ -476,7 +530,6 @@ impl WalkStorage {
 
         (may_skip, new_pos)
     }
-
 
     /// Invalidates walks passing through a specific node and returns the invalidated walks.
     ///
