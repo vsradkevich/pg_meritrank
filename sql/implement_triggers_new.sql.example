@@ -1,0 +1,129 @@
+-- Drop functions if they exist
+-- DROP FUNCTION IF EXISTS add_edge;
+-- DROP FUNCTION IF EXISTS delete_edge;
+-- DROP FUNCTION IF EXISTS update_edge;
+-- DROP FUNCTION IF EXISTS update_graph;
+-- DROP FUNCTION IF EXISTS update_graph_procedure;
+
+CREATE OR REPLACE FUNCTION add_edge() RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM meritrank_add(NEW.subject, NEW.object, NEW.amount);
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION delete_edge() RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM meritrank_delete(OLD.subject, OLD.object);
+    RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_edge() RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM meritrank_delete(OLD.subject, OLD.object);
+    PERFORM meritrank_add(NEW.subject, NEW.object, NEW.amount);
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER beacon_insert
+AFTER INSERT ON public.vote_beacon
+FOR EACH ROW EXECUTE FUNCTION add_edge();
+
+CREATE TRIGGER beacon_update
+AFTER UPDATE ON public.vote_beacon
+FOR EACH ROW EXECUTE FUNCTION update_edge();
+
+CREATE TRIGGER beacon_delete
+AFTER DELETE ON public.vote_beacon
+    FOR EACH ROW EXECUTE FUNCTION delete_edge();
+
+CREATE TRIGGER comment_insert
+AFTER INSERT ON public.vote_comment
+    FOR EACH ROW EXECUTE FUNCTION add_edge();
+
+CREATE TRIGGER comment_update
+AFTER UPDATE ON public.vote_comment
+FOR EACH ROW EXECUTE FUNCTION update_edge();
+
+CREATE TRIGGER comment_delete
+AFTER DELETE ON public.vote_comment
+    FOR EACH ROW EXECUTE FUNCTION delete_edge();
+
+CREATE TRIGGER user_insert
+AFTER INSERT ON public.vote_user
+    FOR EACH ROW EXECUTE FUNCTION add_edge();
+
+CREATE TRIGGER user_update
+AFTER UPDATE ON public.vote_user
+FOR EACH ROW EXECUTE FUNCTION update_edge();
+
+CREATE TRIGGER user_delete
+AFTER DELETE ON public.vote_user
+    FOR EACH ROW EXECUTE FUNCTION delete_edge();
+
+CREATE OR REPLACE VIEW rating AS
+SELECT subject, object, meritrank_calculate(subject, object, 200) AS rating
+FROM (
+    SELECT subject, object, amount
+      FROM public.vote_beacon
+      UNION ALL
+      SELECT subject, object, amount
+      FROM public.vote_comment
+      UNION ALL
+      SELECT subject, object, amount
+    FROM public.vote_user
+) AS combined_graph;
+
+-- CREATE TYPE graphedge AS (
+--     subject TEXT,
+--     object TEXT,
+--     amount FLOAT
+--     );
+
+-- CREATE OR REPLACE FUNCTION update_graph(edges graphedge[]) RETURNS VOID AS $$
+-- BEGIN
+--     PERFORM meritrank_update_graph(edges);
+-- END;
+-- $$ LANGUAGE plpgsql;
+
+-- CREATE OR REPLACE PROCEDURE update_graph_procedure() AS $$
+-- DECLARE
+-- edge_array graphedge[];
+-- BEGIN
+-- SELECT ARRAY(
+--            SELECT (subject, object, amount)::graphedge
+--         FROM (
+--             SELECT subject, object, amount FROM public.vote_beacon
+--             UNION ALL
+--             SELECT subject, object, amount FROM public.vote_comment
+--             UNION ALL
+--             SELECT subject, object, amount FROM public.vote_user
+--         ) AS combined_graph
+--     ) INTO edge_array;
+--
+--     PERFORM meritrank_update_graph(edge_array);
+-- END;
+-- $$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE PROCEDURE update_graph_procedure() AS $$
+DECLARE
+    row record;
+BEGIN
+    PERFORM meritrank_clear();
+
+    FOR row IN (
+        SELECT subject, object, amount FROM public.vote_beacon
+        UNION ALL
+        SELECT subject, object, amount FROM public.vote_comment
+        UNION ALL
+        SELECT subject, object, amount FROM public.vote_user
+    )
+        LOOP
+            PERFORM meritrank_add(row.subject, row.object, row.amount);
+        END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+CALL update_graph_procedure();
