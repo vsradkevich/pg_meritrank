@@ -12,12 +12,53 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+
+CREATE OR REPLACE FUNCTION add_beacon_node() RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM meritrank_add(NEW.id, NEW.user_id, 1);
+    PERFORM meritrank_add(NEW.user_id, NEW.id, 10);
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER beacon_insert
+AFTER INSERT ON public.beacon
+FOR EACH ROW EXECUTE FUNCTION add_beacon_node();
+
+
+CREATE OR REPLACE FUNCTION add_comment_node() RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM meritrank_add(NEW.id, NEW.user_id, 1);
+    PERFORM meritrank_add(NEW.user_id, NEW.id, 1);
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER comment_insert
+AFTER INSERT ON public.comment
+FOR EACH ROW EXECUTE FUNCTION add_comment_node();
+
+
+CREATE OR REPLACE FUNCTION delete_beacon_or_comment_node() RETURNS TRIGGER AS $$
+BEGIN
+    PERFORM meritrank_delete(OLD.id, OLD.user_id);
+    PERFORM meritrank_delete(OLD.user_id, OLD.id);
+RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER comment_delete
+AFTER DELETE ON public.comment
+    FOR EACH ROW EXECUTE FUNCTION delete_beacon_or_comment_node();
+
+
 CREATE OR REPLACE FUNCTION delete_edge() RETURNS TRIGGER AS $$
 BEGIN
     PERFORM meritrank_delete(OLD.subject, OLD.object);
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
+
 
 CREATE OR REPLACE FUNCTION update_edge() RETURNS TRIGGER AS $$
 BEGIN
@@ -27,41 +68,42 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER beacon_insert
+CREATE TRIGGER beacon_vote_insert
 AFTER INSERT ON public.vote_beacon
 FOR EACH ROW EXECUTE FUNCTION add_edge();
 
-CREATE TRIGGER beacon_update
+CREATE TRIGGER beacon_vote_update
 AFTER UPDATE ON public.vote_beacon
 FOR EACH ROW EXECUTE FUNCTION update_edge();
 
-CREATE TRIGGER beacon_delete
+CREATE TRIGGER beacon_vote_delete
 AFTER DELETE ON public.vote_beacon
     FOR EACH ROW EXECUTE FUNCTION delete_edge();
 
-CREATE TRIGGER comment_insert
+CREATE TRIGGER comment_vote_insert
 AFTER INSERT ON public.vote_comment
     FOR EACH ROW EXECUTE FUNCTION add_edge();
 
-CREATE TRIGGER comment_update
+CREATE TRIGGER comment_vote_update
 AFTER UPDATE ON public.vote_comment
 FOR EACH ROW EXECUTE FUNCTION update_edge();
 
-CREATE TRIGGER comment_delete
+CREATE TRIGGER comment_vote_delete
 AFTER DELETE ON public.vote_comment
     FOR EACH ROW EXECUTE FUNCTION delete_edge();
 
-CREATE TRIGGER user_insert
+CREATE TRIGGER user_vote_insert
 AFTER INSERT ON public.vote_user
     FOR EACH ROW EXECUTE FUNCTION add_edge();
 
-CREATE TRIGGER user_update
+CREATE TRIGGER user_vote_update
 AFTER UPDATE ON public.vote_user
 FOR EACH ROW EXECUTE FUNCTION update_edge();
 
 CREATE TRIGGER user_delete
 AFTER DELETE ON public.vote_user
     FOR EACH ROW EXECUTE FUNCTION delete_edge();
+    
 
 CREATE OR REPLACE VIEW rating AS
 SELECT subject, object, meritrank_calculate(subject, object, 200) AS rating
@@ -123,6 +165,24 @@ BEGIN
         LOOP
             PERFORM meritrank_add(row.subject, row.object, row.amount);
         END LOOP;
+    
+    FOR row IN (
+        SELECT id, user_id FROM beacon
+        UNION ALL
+        SELECT id, user_id FROM comment
+    )
+        LOOP
+            PERFORM meritrank_add(row.id, row.user_id, 1);
+            PERFORM meritrank_add(row.user_id, row.id, 10);
+        END LOOP;
+    
+    FOR row IN (
+        SELECT id, user_id FROM comment
+    )
+        LOOP
+            PERFORM meritrank_add(row.id, row.user_id, 1);
+            PERFORM meritrank_add(row.user_id, row.id, 1);
+        END LOOP;   
 END;
 $$ LANGUAGE plpgsql;
 
