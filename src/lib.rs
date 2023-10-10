@@ -6,6 +6,8 @@ mod fetch; // This module is for fetching data from the database
 #[cfg(feature = "fetch_and_generate")]
 mod generate; // This module is for generating the data structures
 mod graph; // This module is for graph related operations
+#[cfg(feature = "shared")]
+mod shared; // This module contains shared data structures
 #[cfg(feature = "fetch_and_generate")]
 mod init; // This module is for initializing the data structures
 mod lib_graph; // This module contains graph related operations and data structures

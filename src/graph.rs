@@ -162,9 +162,6 @@ impl GraphSingleton {
     }
 }
 
-// #[allow(unused_imports)]
-// use crate::edge::GraphEdge;
-
 #[pg_extern]
 pub fn meritrank_add(
     subject: &str,
@@ -242,6 +239,10 @@ pub fn meritrank_clear() -> Result<(), GraphManipulationError> {
 }
 
 // TODO: Finish implementing this
+
+// #[allow(unused_imports)]
+// use crate::edge::GraphEdge;
+
 // #[pg_extern]
 // pub fn meritrank_update_graph(edges: AnyArray) -> Result<(), GraphManipulationError> {
 //     let graph_edges_datum: Datum = edges.datum();
