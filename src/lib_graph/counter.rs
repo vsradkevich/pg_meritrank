@@ -8,7 +8,6 @@ pub struct Counter {
     counter: HashMap<NodeId, Weight>,
 }
 
-#[allow(dead_code)]
 impl Counter {
     /// Creates a new empty counter.
     pub fn new() -> Self {
@@ -27,8 +26,7 @@ impl Counter {
         I: IntoIterator<Item = NodeId>,
     {
         for item in items {
-            let count = self.counter.entry(item).or_insert(0.0);
-            *count += 1.0;
+            *self.counter.entry(item).or_insert(0.0) += 1.0;
         }
     }
 
@@ -47,8 +45,8 @@ impl Counter {
     }
 
     /// Returns a mutable reference to the count value for the given node ID, if it exists.
-    pub fn get_mut_count(&mut self, key: &NodeId) -> Option<&mut Weight> {
-        self.counter.get_mut(key)
+    pub fn get_mut_count(&mut self, key: &NodeId) -> &mut Weight {
+        self.counter.entry(key.clone()).or_insert(0.0)
     }
 
     /// Increments the count for the specified node and returns a mutable reference to the count.

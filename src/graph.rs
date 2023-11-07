@@ -201,17 +201,21 @@ pub fn meritrank_calculate(
     merit_rank.calculate(subject_id, iterations as usize)?;
 
     // Get ranks and handle potential error
-    let ranks: HashMap<NodeId, f64> = merit_rank.get_ranks(subject_id, None)?;
+    let peer_scores = merit_rank.get_ranks(subject_id, None)?;
 
     // Find the rank for our object
     let object_id = GraphSingleton::node_name_to_id(object)?;
-    match ranks.get(&object_id) {
-        Some(&rank) => Ok(rank),
-        None => Err(GraphManipulationError::NodeNotFound(format!(
+
+    // Convert Vec<(NodeId, f64)> to HashMap<NodeId, f64> if needed, or find directly in the Vec
+    let rank = peer_scores.into_iter()
+        .find(|(node_id, _)| node_id == &object_id)
+        .map(|(_, rank)| rank)
+        .ok_or_else(|| GraphManipulationError::NodeNotFound(format!(
             "Rank not found for node: {}",
             object
-        ))),
-    }
+        )))?;
+
+    Ok(rank)
 }
 
 #[pg_extern]

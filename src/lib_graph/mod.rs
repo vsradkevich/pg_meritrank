@@ -1,20 +1,21 @@
+pub mod common;
 pub mod constants;
 pub mod counter;
 pub mod debug;
 pub mod display;
 pub mod edge;
 pub mod errors;
-pub mod gene;
 pub mod graph;
-pub mod names;
 pub mod node;
 pub mod rank;
 pub mod storage;
 pub mod walk;
 
-// pub use rand::distributions::WeightedIndex;
-
-pub use crate::lib_graph::errors::MeritRankError;
-pub use crate::lib_graph::graph::MyGraph;
-pub use crate::lib_graph::node::{NodeId, Weight};
-pub use crate::lib_graph::rank::MeritRank;
+pub use counter::{Counter, CounterIterator};
+pub use edge::EdgeId;
+pub use errors::MeritRankError;
+pub use graph::{MyDiGraph, MyGraph};
+pub use node::{Node, NodeId, Weight};
+pub use rank::MeritRank;
+pub use walk::{WalkId, WalkIdGenerator, PosWalk, RandomWalk};
+pub use storage::WalkStorage;

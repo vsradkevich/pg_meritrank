@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-// use std::error::Error;
 
 use petgraph::algo::has_path_connecting;
 use petgraph::graph::DiGraph;
@@ -147,7 +146,7 @@ impl MyGraph {
     ///
     /// A vector of tuples representing the edges connected to the specified `ego` node,
     /// or `None` if the `ego` node does not exist in the graph or there are no edges connected to it.
-    pub fn _edges(&self, ego: NodeId) -> Option<Vec<(NodeId, NodeId, Weight)>> {
+    pub fn edges(&self, ego: NodeId) -> Option<Vec<(NodeId, NodeId, Weight)>> {
         // Return None if the ego node does not exist in the graph
         // or if there are no edges connected to it
         // Get the NodeIndex of the ego node from the nodes mapping
@@ -176,18 +175,6 @@ impl MyGraph {
                 Some(collected_edges)
             }
         })
-    }
-
-    /// Retrieves the edges of the graph.
-    pub fn get_edges(&self) -> Vec<(NodeId, NodeId, Weight)> {
-        let mut edges = Vec::new();
-        for edge in self.graph.edge_references() {
-            let source = self.graph[edge.source()].get_id();
-            let target = self.graph[edge.target()].get_id();
-            let weight = edge.weight().clone();
-            edges.push((source, target, weight));
-        }
-        edges
     }
 
     /// Checks if there is a path between the two given nodes.
@@ -281,12 +268,5 @@ impl PartialEq for MyGraph {
         }
 
         true
-
-        // let self_nodes: HashSet<NodeId> = self.graph.raw_nodes().iter().map(|node| node.clone()).collect();
-        // let other_nodes: HashSet<NodeId> = other.graph.raw_nodes().iter().map(|node| node.clone()).collect();
-
-        // self_nodes == other_nodes
     }
 }
-
-impl Eq for MyGraph {}

@@ -214,7 +214,7 @@ impl RandomWalk {
     ///     println!("Node ID: {:?}", node_id);
     /// }
     /// ```
-    pub fn iter(&self) -> impl Iterator<Item = &NodeId> {
+    pub fn iter(&self) -> impl Iterator<Item=&NodeId> {
         self.nodes.iter()
     }
 
@@ -288,7 +288,6 @@ impl IntoIterator for RandomWalk {
     }
 }
 
-#[allow(dead_code)]
 /// Penalty calculation logic:
 /// 1. The penalty is accumulated by walking backwards from the last node in the segment.
 /// 2. If a node is encountered in the walk more than once, its penalty is updated to the highest current accumulated penalty.
@@ -339,17 +338,6 @@ impl RandomWalk {
     }
 }
 
-// use crate::error::MeritRankError;
-// use crate::graph::{MyGraph, MyDiGraph};
-// use crate::lib_graph::node::{NodeId};
-// use crate::edge::EdgeId;
-// use crate::counter::{Counter, CounterIterator};
-// use crate::ranking::{PosWalk};
-// use crate::walk::WalkIdGenerator;
-// use crate::walk_storage::WalkStorage;
-// use crate::constants::{ASSERT, OPTIMIZE_INVALIDATION};
-// use crate::common::{sign};
-
 /// Represents a positional random walk.
 pub struct PosWalk {
     walk: RandomWalk,
@@ -373,7 +361,7 @@ impl PosWalk {
     }
 
     /// Returns a mutable reference to the `RandomWalk` associated with the `PosWalk`.
-    pub fn _get_walk_mut(&mut self) -> &mut RandomWalk {
+    pub fn get_walk_mut(&mut self) -> &mut RandomWalk {
         &mut self.walk
     }
 

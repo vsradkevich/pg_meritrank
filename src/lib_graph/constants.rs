@@ -1,4 +1,3 @@
-#[allow(dead_code)]
 pub const ASSERT: bool = false;
-#[allow(dead_code)]
+pub const VERBOSE: bool = false;
 pub const OPTIMIZE_INVALIDATION: bool = true;

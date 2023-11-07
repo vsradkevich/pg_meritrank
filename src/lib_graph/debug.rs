@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::lib_graph::{node::NodeId, storage::WalkStorage, walk::PosWalk, walk::RandomWalk};
+use crate::lib_graph::{NodeId, PosWalk, RandomWalk, WalkStorage};
 
 impl fmt::Debug for NodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

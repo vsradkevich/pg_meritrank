@@ -2,8 +2,8 @@
 // mod edge; // This module contains edge related operations and data structures
 mod error; // This module contains error types and handling logic
 mod graph; // This module is for graph related operations
-#[cfg(feature = "shared")]
-mod shared; // This module contains shared data structures
+// #[cfg(feature = "shared")]
+// mod shared; // This module contains shared data structures
 mod lib_graph; // This module contains graph related operations and data structures
 mod tests;
 

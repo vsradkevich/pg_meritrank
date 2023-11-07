@@ -1,5 +1,9 @@
 use pgx::shmem::{PGXSharedMemory, PgSharedMemoryInitialization};
 
+use crate::lib_graph::NodeId;
+use crate::lib_graph::MyGraph;
+use std::collections::HashMap;
+
 pub struct GraphSharedMemory {
     graph: MyGraph,
     node_names: HashMap<String, NodeId>,

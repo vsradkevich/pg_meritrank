@@ -55,7 +55,6 @@ pub struct Node {
     id: NodeId,
 }
 
-#[allow(dead_code)]
 impl Node {
     /// Creates a new Node with the specified id.
     pub fn new(id: NodeId) -> Self {
