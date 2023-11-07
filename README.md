@@ -38,20 +38,12 @@ Before running tests, make sure you have the required version of Rust and all de
 rustup default nightly
 ```
 
-If you have specific features such as `fetch_and_generate`, make sure you enable them before running tests.
-
 ### Run tests
 
 To run the tests, run the following command:
 
 ```bash
 cargo +nightly pgx test
-```
-
-If you want to run tests with a specific feature enabled, such as `fetch_and_generate`, use the following command:
-
-```bash
-cargo +nightly pgx test --features fetch_and_generate
 ```
 
 ### Interpreting results

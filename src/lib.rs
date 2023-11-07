@@ -1,18 +1,10 @@
 // Importing modules for the library
 // mod edge; // This module contains edge related operations and data structures
 mod error; // This module contains error types and handling logic
-#[cfg(feature = "fetch_and_generate")]
-mod fetch; // This module is for fetching data from the database
-#[cfg(feature = "fetch_and_generate")]
-mod generate; // This module is for generating the data structures
 mod graph; // This module is for graph related operations
 #[cfg(feature = "shared")]
 mod shared; // This module contains shared data structures
-#[cfg(feature = "fetch_and_generate")]
-mod init; // This module is for initializing the data structures
 mod lib_graph; // This module contains graph related operations and data structures
-#[cfg(feature = "fetch_and_generate")]
-mod sql; // This module is for SQL related operations
 mod tests;
 
 use pgx::*;
